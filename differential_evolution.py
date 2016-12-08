@@ -60,6 +60,3 @@ def differential_evolution(func, number_of_agents, number_of_parameters, CR, F, 
 			continue
 
 	return minimum, optimised_agent
-
-def func(x):
-	return (x[0] - 2)**2 + 2
