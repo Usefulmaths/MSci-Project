@@ -23,8 +23,8 @@ def three_agents(x_index, population):
 
 	return index1, index2, index3
 
-def differential_evolution(func, number_of_parameters, CR, F, bounds):
-	agents = generate_agents(1000000, number_of_parameters, bounds)
+def differential_evolution(func, number_of_agents, number_of_parameters, CR, F, bounds):
+	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
 
 	for j in range(len(agents)):
 		x = agents[j]
