@@ -23,40 +23,43 @@ def three_agents(x_index, population):
 
 	return index1, index2, index3
 
-def differential_evolution(func, number_of_agents, number_of_parameters, CR, F, bounds):
+def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds):
 	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
 
-	for j in range(len(agents)):
-		x = agents[j]
-		a_index, b_index, c_index = three_agents(j, agents)
-		
-		a = agents[a_index]
-		b = agents[b_index]
-		c = agents[c_index]
-
-		R = randrange(0, number_of_parameters)
-
-		y = []
-		for k in range(number_of_parameters):
-			r_k = uniform(0, 1)
-			if(r_k < CR or k == R):
-				y.append(a[k] + F * (b[k] - c[k]))
-			else:
-				y.append(x[k])
-
-		if(func(y) < func(x)):
-			agents[j] = y
-		else:
-			continue
-
-	minimum = 1E10
 	optimised_agent = []
-	for agent in agents:
-		f = func(agent)
-		if(f < minimum):
-			minimum = f
-			optimised_agent = agent
-		else: 
-			continue
+	minimum = 10E10
+
+	for iters in range(iterations):
+		for j in range(len(agents)):
+			x = agents[j]
+			a_index, b_index, c_index = three_agents(j, agents)
+			
+			a = agents[a_index]
+			b = agents[b_index]
+			c = agents[c_index]
+
+			R = randrange(0, number_of_parameters)
+
+			y = []
+			for k in range(number_of_parameters):
+				r_k = uniform(0, 1)
+				if(r_k < CR or k == R):
+					y.append(a[k] + F * (b[k] - c[k]))
+				else:
+					y.append(x[k])
+
+			if(func(y) < func(x)):
+				agents[j] = y
+			else:
+				continue
+
+		for agent in agents:
+			f = func(agent)
+			if(f < minimum):
+				minimum = f
+				optimised_agent = agent
+			else: 
+				continue
+		print("Minimum after " + str(iters + 1) + " iterations: " + str(minimum))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 
 	return minimum, optimised_agent
