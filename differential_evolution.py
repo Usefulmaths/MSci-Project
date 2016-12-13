@@ -1,6 +1,7 @@
 from random import uniform
 from random import randrange
 
+# Generates an initial population of agents, given bounds.
 def generate_agents(N, number_of_parameters, bounds):
 	agents = []
 	for i in range(N):
@@ -11,6 +12,7 @@ def generate_agents(N, number_of_parameters, bounds):
 	return agents
 
 
+# Finds three unique random indexes in an array.
 def three_agents(x_index, population):
 	index1 = x_index
 	index2 = x_index
@@ -72,6 +74,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 			else:
 				continue
 
+		# Update and print the minimum every 10 iterations to keep track.
 		if(iters % 10 == 0):
 			for agent in agents:
 				f = func(agent)
@@ -80,13 +83,15 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 					optimised_agent = agent
 				else: 
 					continue
-
-		print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum) + "params: ", agents)     
+			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum) + "params: ", agents)     
 
 		iters += 1
-		if(minimum < threshold_value):
-			break
 
+		# If minimum is less than threshold_value, print details and continue running the code.
+		if(minimum < threshold_value):
+			print(minimum, optimised_agent, iters)
+
+		# If iteration criteria is met, return values and end code.
 		if(iters > iterations):
 			return minimum, optimised_agent, iters
 
