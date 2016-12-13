@@ -27,7 +27,8 @@ def three_agents(x_index, population):
 
 	return index1, index2, index3
 
-def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, threshold_value=10e-100):
+def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, threshold_value=10e100):
+	# Initialisation
 	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
 
 	optimised_agent = []
@@ -45,6 +46,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 
 			R = randrange(0, number_of_parameters)
 
+			# Mutation and Recombination
 			y = []
 			for k in range(number_of_parameters):
 				r_k = uniform(0, 1)
@@ -53,6 +55,18 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 				else:
 					y.append(x[k])
 
+				# Bound parameters within a region.
+				for y_i in range(len(y)):
+					if(y[y_i] > hard_bounds[1]):
+						y[y_i] = hard_bounds[1]
+
+					elif(y[y_i] < hard_bounds[0]):
+						y[y_i] = hard_bounds[0]
+
+					else:
+						continue
+
+			# Selection
 			if(func(y) < func(x)):
 				agents[j] = y
 			else:
@@ -67,15 +81,14 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 				else: 
 					continue
 
-			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+		print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum) + "params: ", agents)     
+
 		iters += 1
 		if(minimum < threshold_value):
-			print(iters, optimised_agent)
-		if(iters > iterations):
 			break
-			
 
-		
+		if(iters > iterations):
+			return minimum, optimised_agent, iters
 
 		
 	return minimum, optimised_agent, iters
