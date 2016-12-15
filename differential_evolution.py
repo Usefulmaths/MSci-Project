@@ -29,6 +29,11 @@ def three_agents(x_index, population):
 
 	return index1, index2, index3
 
+def write_to_file(file_name, iters, minimum, agent):
+	file_open = open(file_name + ".txt", "a")
+	file_open.write(str(iters) + ", " + str(minimum) + ", " + str(agent) + "\n")
+	file_open.close()	
+
 def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, threshold_value=10e100):
 	# Initialisation
 	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
@@ -83,7 +88,8 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 					optimised_agent = agent
 				else: 
 					continue
-			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum) + "params: ", agents)     
+			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum))  
+			write_to_file("cnot", iters, minimum, optimised_agent)   
 
 		iters += 1
 
