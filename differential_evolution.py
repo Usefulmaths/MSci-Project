@@ -56,7 +56,7 @@ def find_maximum_index(return_dict):
 def func_manager(func, index, x, return_dict):
 	return_dict[index] = func(x)
 
-def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, threshold_value=10e100):
+def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, file_name, threshold_value=10e100, thread=False):
 	# Initialisation
 	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
 
@@ -117,12 +117,12 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 		# Update and print the minimum every 10 iterations to keep track.
 		if(iters % 10 == 0):
 			if(thread):
-				manager = multiprocessing.Manager()
+				manager = Manager()
 				return_dict = manager.dict()
 
 				jobs = []
 				for i in range(0, 8, 2):
-					p = multiprocessing.Process(target=thread_minimum, args=(func, agents, [i, i + 1], return_dict))
+					p = Process(target=thread_minimum, args=(func, agents, [i, i + 1], return_dict))
 					jobs.append(p)
 					p.start()
 
