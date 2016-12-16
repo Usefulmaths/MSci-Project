@@ -1,6 +1,7 @@
 from random import uniform
 from random import randrange
 from multiprocessing import Process, Manager
+
 # Generates an initial population of agents, given bounds.
 def generate_agents(N, number_of_parameters, bounds):
 	agents = []
@@ -33,6 +34,24 @@ def write_to_file(file_name, iters, minimum, agent):
 	file_open = open(file_name + ".txt", "a")
 	file_open.write(str(iters) + ", " + str(minimum) + ", " + str(agent) + "\n")
 	file_open.close()	
+
+
+def thread_minimum(func, agents, limits, return_dict):
+	minimum = 10E10
+	optimised_index = -1
+
+	for n in range(limits[0], limits[1] + 1):
+		f = func(agents[n])
+		if(f < minimum):
+			minimum = f
+			optimised_index = n
+			return_dict[n] = minimum
+
+
+def find_maximum_index(return_dict):  
+     v=list(return_dict.values())
+     k=list(return_dict.keys())
+     return k[v.index(max(v))]
 
 def func_manager(func, index, x, return_dict):
 	return_dict[index] = func(x)
@@ -97,15 +116,33 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 
 		# Update and print the minimum every 10 iterations to keep track.
 		if(iters % 10 == 0):
-			for agent in agents:
-				f = func(agent)
-				if(f < minimum):
-					minimum = f
-					optimised_agent = agent
-				else: 
-					continue
+			if(thread):
+				manager = multiprocessing.Manager()
+				return_dict = manager.dict()
+
+				jobs = []
+				for i in range(0, 8, 2):
+					p = multiprocessing.Process(target=thread_minimum, args=(func, agents, [i, i + 1], return_dict))
+					jobs.append(p)
+					p.start()
+
+				for p in jobs:
+					p.join()
+
+				best_index = find_maximum_index(return_dict)
+				minimum = return_dict[best_index]
+				optimised_agent = agents[best_index]
+			else: 
+				for agent in agents:
+					f = func(agent)
+					if(f < minimum):
+						minimum = f
+						optimised_agent = agent
+					else: 
+						continue
+
 			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum))  
-			write_to_file("cnot", iters, minimum, optimised_agent)   
+			write_to_file(file_name, iters, minimum, optimised_agent)   
 
 		iters += 1
 
