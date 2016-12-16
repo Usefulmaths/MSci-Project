@@ -1,6 +1,6 @@
 from random import uniform
 from random import randrange
-
+from multiprocessing import Process, Manager
 # Generates an initial population of agents, given bounds.
 def generate_agents(N, number_of_parameters, bounds):
 	agents = []
@@ -33,6 +33,9 @@ def write_to_file(file_name, iters, minimum, agent):
 	file_open = open(file_name + ".txt", "a")
 	file_open.write(str(iters) + ", " + str(minimum) + ", " + str(agent) + "\n")
 	file_open.close()	
+
+def func_manager(func, index, x, return_dict):
+	return_dict[index] = func(x)
 
 def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, threshold_value=10e100):
 	# Initialisation
@@ -73,8 +76,21 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 					else:
 						continue
 
+			manager = Manager()
+			return_dict = manager.dict()
+
+			jobs = []
+			agent_compare = [x, y]
+			for i in range(len(agent_compare)):
+				p = Process(target=func_manager, args=(func, i, agent_compare[i], return_dict,))
+				jobs.append(p)
+				p.start()
+
+			for job in jobs:
+				job.join()
+
 			# Selection
-			if(func(y) < func(x)):
+			if(return_dict[1] < return_dict[0]):
 				agents[j] = y
 			else:
 				continue
@@ -98,7 +114,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 			print(minimum, optimised_agent, iters)
 
 		# If iteration criteria is met, return values and end code.
-		if(iters > iterations):
+		if(iters >= iterations):
 			return minimum, optimised_agent, iters
 
 		
