@@ -121,8 +121,9 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 				return_dict = manager.dict()
 
 				jobs = []
-				for i in range(0, 8, 2):
-					p = Process(target=thread_minimum, args=(func, agents, [i, i + 1], return_dict))
+				steps = 4
+				for i in range(0, number_of_agents, steps):
+					p = Process(target=thread_minimum, args=(func, agents, [i, i + (steps - 1)], return_dict))
 					jobs.append(p)
 					p.start()
 
