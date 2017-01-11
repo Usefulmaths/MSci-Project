@@ -95,16 +95,16 @@ def average_fidelity(J):
 
     total_fid = 0
 
-    for iters in range(10):
+    for iters in range(20):
         psi0 = tensor(rand_ket(N = 2), rand_ket(N = 2), rand_ket(N = 2))
         psi_state = tensor(psi0, rand_ket(N = 2))
     
         epsilon = (U * ket2dm(psi_state) * U.dag()).ptrace([0, 1, 2])
 
         fid_contribution = psi0.dag() * G.dag() * epsilon * G * psi0
-        total_fid += fid_contribution
+        total_fid += fid_contribution[0][0][0].real
     
-    return total_fid / 10
+    return -total_fid / 20
         
 
 
