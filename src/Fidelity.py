@@ -83,6 +83,25 @@ class Fidelity:
 
 		return -abs(Fid)
 
+	def likelihood(self, params, rho_0):
+		rho = tensor(rho_0, self.generate_dont_care_states())
+		H = self.get_hamiltonian(params)
+		U = (-j * H).expm()
+
+		A = (self.ideal_gate * rho_0) * (self.ideal_gate * rho_0).dag()
+		B = ((U * rho) * (U * rho).dag()).ptrace([0, 1, 2])
+
+		return abs((A * B).tr())
+
+	def average_fidelity2(self, params, number_iters):
+		total_fid = 0
+
+		for iters in range(number_iters):
+			psi0 = tensor(rand_ket(N = 2), rand_ket(N = 2), rand_ket(N = 2))
+			total_fid += self.likelihood(params, psi0*psi0.dag())
+
+		return total_fid / number_iters
+
 	def average_fidelity(self, params, number_iters):
 		H = self.get_hamiltonian(params)
 		U = (-j * H).expm()

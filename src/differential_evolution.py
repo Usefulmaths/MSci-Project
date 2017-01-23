@@ -142,7 +142,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 					else: 
 						continue
 
-			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum))  
+			print("Minimum after " + str((iters + 1)) + " iterations (" + file_name + "): "  + str(minimum))  
 			write_to_file(file_name, iters, minimum, optimised_agent)   
 
 		iters += 1
