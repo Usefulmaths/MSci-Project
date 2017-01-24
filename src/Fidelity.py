@@ -1,12 +1,12 @@
-from hamiltonian_functions import *
 from math import log, sin, cos
+from qutip import *
 
 j = complex(0, 1)
 
 class Fidelity:
-	def __init__(self, ideal_gate, number_qubits_network):
+	def __init__(self, network, ideal_gate):
 		self.ideal_gate = ideal_gate
-		self.number_qubits_network = number_qubits_network
+		self.network = network
 
 	def get_gate_dimension(self):
 		return self.ideal_gate.shape[0]
@@ -16,7 +16,7 @@ class Fidelity:
 
 	# Generates a tensor state and identity for the states we don't care about (ancillae qubits)
 	def generate_dont_care_states(self):
-	    h = self.number_qubits_network - self.number_region_qubits()
+	    h = self.network.get_number_qubits() - self.number_region_qubits()
 	    states_dont_care = [sin(0.847) * basis(2,1) + cos(0.847) * basis(2,0)] * (h)
 	    return tensor(states_dont_care)
 
@@ -49,12 +49,9 @@ class Fidelity:
 		c = self.get_bin(a)
 		return tensor(basis(2, int(c[-3])), basis(2, int(c[-2])), basis(2, int(c[-1])))
 
-	def get_hamiltonian(self, params):
-		return hamiltonian(params)
-
 
 	def deterministic_gate_fidelity(self, params):
-		H = self.get_hamiltonian(params)
+		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
 		Udag = U.dag()
 		G = self.ideal_gate
@@ -85,7 +82,7 @@ class Fidelity:
 
 	def likelihood(self, params, rho_0):
 		rho = tensor(rho_0, self.generate_dont_care_states())
-		H = self.get_hamiltonian(params)
+		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
 
 		A = (self.ideal_gate * rho_0) * (self.ideal_gate * rho_0).dag()
@@ -93,17 +90,8 @@ class Fidelity:
 
 		return abs((A * B).tr())
 
-	def average_fidelity2(self, params, number_iters):
-		total_fid = 0
-
-		for iters in range(number_iters):
-			psi0 = tensor(rand_ket(N = 2), rand_ket(N = 2), rand_ket(N = 2))
-			total_fid += self.likelihood(params, psi0*psi0.dag())
-
-		return total_fid / number_iters
-
 	def average_fidelity(self, params, number_iters):
-		H = self.get_hamiltonian(params)
+		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
 		G = self.ideal_gate
 
