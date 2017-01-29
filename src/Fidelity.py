@@ -3,6 +3,10 @@ from qutip import *
 
 j = complex(0, 1)
 
+'''
+A class that takes a quantum network and an ideal gate as parameters. 
+Methods to calculate different examples of fidelity can be called.
+'''
 class Fidelity:
 	def __init__(self, network, ideal_gate):
 		self.ideal_gate = ideal_gate
@@ -14,12 +18,13 @@ class Fidelity:
 	def number_region_qubits(self):
 		return int(log(self.get_gate_dimension(), 2))
 
-	# Generates a tensor state and identity for the states we don't care about (ancillae qubits)
+	''' Generates a tensor state and identity for the states we don't care about (ancillae qubits) '''
 	def generate_dont_care_states(self):
 	    h = self.network.get_number_qubits() - self.number_region_qubits()
 	    states_dont_care = [sin(0.847) * basis(2,1) + cos(0.847) * basis(2,0)] * (h)
 	    return tensor(states_dont_care)
 
+	# Decomposes the ideal gate into the positions of the non-zero elements
 	def get_gate(self):
 		s = []
 
@@ -32,6 +37,7 @@ class Fidelity:
 					s.append([i, j])
 		return s
 
+	''' Converts a decimal number into a four-string binary number '''
 	def get_bin(self, a):
 		s = bin(a)[2:]
 		l = len(s)
@@ -41,6 +47,7 @@ class Fidelity:
 
 		return s
 
+	''' Converts a decimal number into the corresponding qudit basis vector (3 qubit gates). '''
 	def get_basis(self, a):
 		if a == 0:
 			B = [basis(2, 0)] * self.number_region_qubits()
@@ -49,7 +56,7 @@ class Fidelity:
 		c = self.get_bin(a)
 		return tensor(basis(2, int(c[-3])), basis(2, int(c[-2])), basis(2, int(c[-1])))
 
-
+	''' Calculates the average gate fidelity, given the parameters of the network '''
 	def deterministic_gate_fidelity(self, params):
 		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
@@ -80,6 +87,10 @@ class Fidelity:
 
 		return -abs(Fid)
 
+	''' 
+	Returns the 'likelihood' between the network gate and ideal gate 
+	when acting on a single random state.
+	'''
 	def likelihood(self, params, rho_0):
 		rho = tensor(rho_0, self.generate_dont_care_states())
 		H = self.network.hamiltonian(params)
@@ -90,6 +101,9 @@ class Fidelity:
 
 		return abs((A * B).tr())
 
+	'''
+	Calculates the average likelihood over many states
+	'''
 	def average_fidelity(self, params, number_iters):
 		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()

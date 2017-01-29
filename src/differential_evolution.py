@@ -8,7 +8,9 @@ def generate_agents(N, number_of_parameters, bounds):
 	for i in range(N):
 		agent = []
 		for j in range(number_of_parameters):
-			agent.append(uniform(bounds[0], bounds[1]))
+			agent.append(uniform(bounds[j][0], bounds[j][1]))
+
+		print(agent)
 		agents.append(agent)
 	return agents
 
@@ -86,11 +88,11 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 
 				# Bound parameters within a region.
 				for y_i in range(len(y)):
-					if(y[y_i] > hard_bounds[1]):
-						y[y_i] = hard_bounds[1]
+					if(y[y_i] > hard_bounds[y_i][1]):
+						y[y_i] = hard_bounds[y_i][1]
 
-					elif(y[y_i] < hard_bounds[0]):
-						y[y_i] = hard_bounds[0]
+					elif(y[y_i] < hard_bounds[y_i][0]):
+						y[y_i] = hard_bounds[y_i][0]
 
 					else:
 						continue
