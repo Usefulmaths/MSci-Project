@@ -48,12 +48,12 @@ class Optimisation:
 
 
 	'''STILL IN WORKING PROGRESS'''
-	def optimise_sgd(self, func, iterations, delta):
-		step = 0.0008
+	def optimise_sgd(self, func, step, delta, learning_rate_convergence, iterations, iteration_length):
+		print("Beginning Optimisation")
 		time = step
 
-		for i in range(1000):
-			walk = step * 300 * (i + 1)
+		for i in range(iterations):
+			walk = step * learning_rate_convergence * (i + 1)
 			while True:
 				rho_0 = tensor(rand_ket(N = 2), rand_ket(N = 2), rand_ket(N = 2))
 
@@ -67,7 +67,7 @@ class Optimisation:
 				self.params[index] = self.params[index] + learning_rate * grad
 
 				function_evaluation = func(self.params, rho_0)				
-				self.write_to_file(self.filename, time, function_evaluation, self.params)
+				self.write_to_file(self.filename, int(time/step), function_evaluation, self.params)
 
 			
 				if(int(time/step) % 10 < 1):
@@ -76,7 +76,7 @@ class Optimisation:
 				time += step
 				walk += step
 
-				if(int(time/step) > 1600 * (i + 1)):
+				if(int(time/step) > iteration_length * (i + 1)):
 					print('HIT')
 					print(self.params)
 					break
