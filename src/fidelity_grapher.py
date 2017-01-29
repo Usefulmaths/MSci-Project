@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 while True:
-
-	data = pd.read_csv('toffoli_tests.txt', names=["index", "value"])
+	data = pd.read_csv('QHA_output.txt', names=["index", "value"])
 
 	X = np.array(data.index)
 	y = np.array(data.value)
