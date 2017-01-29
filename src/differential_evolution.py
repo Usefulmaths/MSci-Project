@@ -8,7 +8,9 @@ def generate_agents(N, number_of_parameters, bounds):
 	for i in range(N):
 		agent = []
 		for j in range(number_of_parameters):
-			agent.append(uniform(bounds[0], bounds[1]))
+			agent.append(uniform(bounds[j][0], bounds[j][1]))
+
+		print(agent)
 		agents.append(agent)
 	return agents
 
@@ -86,11 +88,11 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 
 				# Bound parameters within a region.
 				for y_i in range(len(y)):
-					if(y[y_i] > hard_bounds[1]):
-						y[y_i] = hard_bounds[1]
+					if(y[y_i] > hard_bounds[y_i][1]):
+						y[y_i] = hard_bounds[y_i][1]
 
-					elif(y[y_i] < hard_bounds[0]):
-						y[y_i] = hard_bounds[0]
+					elif(y[y_i] < hard_bounds[y_i][0]):
+						y[y_i] = hard_bounds[y_i][0]
 
 					else:
 						continue
@@ -121,7 +123,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 				return_dict = manager.dict()
 
 				jobs = []
-				steps = 4
+				steps = 1
 				for i in range(0, number_of_agents, steps):
 					p = Process(target=thread_minimum, args=(func, agents, [i, i + (steps - 1)], return_dict))
 					jobs.append(p)
@@ -142,7 +144,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 					else: 
 						continue
 
-			print("Minimum after " + str((iters + 1)) + " iterations: " + str(minimum))  
+			print("Minimum after " + str((iters + 1)) + " iterations (" + file_name + "): "  + str(minimum))  
 			write_to_file(file_name, iters, minimum, optimised_agent)   
 
 		iters += 1
@@ -152,6 +154,7 @@ def differential_evolution(func, iterations, number_of_agents, number_of_paramet
 			print(minimum, optimised_agent, iters)
 
 		# If iteration criteria is met, return values and end code.
+		print(iters)
 		if(iters >= iterations):
 			return minimum, optimised_agent, iters
 
