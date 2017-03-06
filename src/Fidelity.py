@@ -1,13 +1,10 @@
 from math import log, sin, cos
 from qutip import *
-
+from time import time
 j = complex(0, 1)
 
-'''
-A class that takes a quantum network and an ideal gate as parameters. 
-Methods to calculate different examples of fidelity can be called.
-'''
 class Fidelity:
+
 	def __init__(self, network, ideal_gate):
 		self.ideal_gate = ideal_gate
 		self.network = network
@@ -18,11 +15,11 @@ class Fidelity:
 	def number_region_qubits(self):
 		return int(log(self.get_gate_dimension(), 2))
 
-	''' Generates a tensor state and identity for the states we don't care about (ancillae qubits) '''
-	def generate_dont_care_states(self):
-	    h = self.network.get_number_qubits() - self.number_region_qubits()
-	    states_dont_care = [sin(0.847) * basis(2,1) + cos(0.847) * basis(2,0)] * (h)
-	    return tensor(states_dont_care)
+
+	def set_generate_dont_care_states(self):
+		h = self.network.get_number_qubits() - self.number_region_qubits()
+		states_dont_care = [sin(0.847) * basis(2,1) + cos(0.847) * basis(2,0)] * (h)
+		self.states_dont_care = tensor(states_dont_care)
 
 	# Decomposes the ideal gate into the positions of the non-zero elements
 	def get_gate(self):
@@ -37,7 +34,9 @@ class Fidelity:
 					s.append([i, j])
 		return s
 
-	''' Converts a decimal number into a four-string binary number '''
+	def set_decomposed_gate(self):
+		self.decomposed_gate = self.get_gate()
+
 	def get_bin(self, a):
 		s = bin(a)[2:]
 		l = len(s)
@@ -47,7 +46,7 @@ class Fidelity:
 
 		return s
 
-	''' Converts a decimal number into the corresponding qudit basis vector (3 qubit gates). '''
+
 	def get_basis(self, a):
 		if a == 0:
 			B = [basis(2, 0)] * self.number_region_qubits()
@@ -56,41 +55,77 @@ class Fidelity:
 		c = self.get_bin(a)
 		return tensor(basis(2, int(c[-3])), basis(2, int(c[-2])), basis(2, int(c[-1])))
 
-	''' Calculates the average gate fidelity, given the parameters of the network '''
+	def set_basis_array(self):
+		basis = []
+		for i in range(8):
+			basis = [self.get_basis(i) for i in range(self.get_gate_dimension())]
+		self.basis_array = basis
+
+	def basis_8(self, i):
+		a = basis(8, i)
+		a.dims = [[2, 2, 2], [1, 1, 1]]
+		return a
+
+
+	def instantiate_xi_and_gv(self):
+		xi = 0 
+
+		for i in range(8):
+			xi += 1./8**0.5 * tensor(self.basis_8(i), self.basis_8(i), self.states_dont_care)
+
+		gv = 0
+
+		for i in range(8):
+			for p in range(8):
+				gv += self.ideal_gate.data[i, p] * tensor(self.basis_8(p), self.basis_8(i))
+				
+		self.xi = xi
+		self.gv = gv
+
+	def average_gate_fidelity(self, params):
+		H = self.network.hamiltonian(params)
+		U = (-j * H).expm()
+		D = self.ideal_gate.shape[0]
+
+		e = qeye(D)
+		e.dims = [[2, 2, 2], [2, 2, 2]]
+
+		xi2 = tensor(e, U) * self.xi
+
+		rho = xi2.ptrace([0, 1, 2, 3, 4, 5])
+
+		overlap = self.gv.dag() * rho * self.gv
+
+		return -(1./(D + 1) + 1./(D + 1) * abs(overlap[0][0][0])), params
+
 	def deterministic_gate_fidelity(self, params):
 		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
 		Udag = U.dag()
 		G = self.ideal_gate
 
-		gate_element_positions = self.get_gate()
+		gate_element_positions = self.decomposed_gate
 		gate_dimension = float(self.get_gate_dimension())
-
 		Fid = 1./(gate_dimension + 1)
 
-		for x in gate_element_positions:
+		for x in range(len(gate_element_positions)):
 		
-			bra_i = self.get_basis(x[0]).dag()
-			ket_k = self.get_basis(x[1])
-			for y in gate_element_positions:
-				ket_j = self.get_basis(y[0])
-				bra_l = self.get_basis(y[1]).dag()
-				epsilon = U * tensor(ket_k * bra_l, self.generate_dont_care_states() * self.generate_dont_care_states().dag()) * Udag
+			bra_i = self.basis_array[gate_element_positions[x][0]].dag()
+			ket_k = self.basis_array[gate_element_positions[x][1]]
+			for y in range(len(gate_element_positions)):
+				ket_j = self.basis_array[gate_element_positions[y][0]]
+				bra_l = self.basis_array[gate_element_positions[y][1]].dag()
+				epsilon = U * tensor(ket_k * bra_l, self.states_dont_care * self.states_dont_care.dag()) * Udag
 				
 				eps_ijkl = bra_i * epsilon.ptrace([0, 1, 2]) * ket_j
 
-				g_star_ik = G[x[0], x[1]].conjugate()
-				g_jl = G[y[0], y[1]]
+				g_star_ik = G[gate_element_positions[x][0], gate_element_positions[x][1]].conjugate()
+				g_jl = G[gate_element_positions[y][0], gate_element_positions[y][1]]
 
 				fidStep = (1. / (gate_dimension * (gate_dimension + 1))) * g_star_ik * eps_ijkl * g_jl
 				Fid += fidStep[0][0][0]
-
 		return -abs(Fid)
 
-	''' 
-	Returns the 'likelihood' between the network gate and ideal gate 
-	when acting on a single random state.
-	'''
 	def likelihood(self, params, rho_0):
 		rho = tensor(rho_0, self.generate_dont_care_states())
 		H = self.network.hamiltonian(params)
@@ -101,9 +136,6 @@ class Fidelity:
 
 		return abs((A * B).tr())
 
-	'''
-	Calculates the average likelihood over many states
-	'''
 	def average_fidelity(self, params, number_iters):
 		H = self.network.hamiltonian(params)
 		U = (-j * H).expm()
@@ -113,7 +145,7 @@ class Fidelity:
 
 		for iters in range(number_iters):
 			psi0 = tensor(rand_ket(N = 2), rand_ket(N = 2), rand_ket(N = 2))
-			psi_state = tensor(psi0, self.generate_dont_care_states())
+			psi_state = tensor(psi0, self.states_dont_care)
 
 			epsilon = (U * ket2dm(psi_state) * U.dag()).ptrace([0, 1, 2])
 
@@ -121,3 +153,5 @@ class Fidelity:
 			total_fid += fid_contribution[0][0][0]
 
 		return abs(total_fid) / number_iters
+
+

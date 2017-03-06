@@ -1,6 +1,9 @@
+import numpy as np
 from random import uniform
 from random import randrange
 from multiprocessing import Process, Manager
+from mpi4py import MPI
+from time import time
 
 # Generates an initial population of agents, given bounds.
 def generate_agents(N, number_of_parameters, bounds):
@@ -10,10 +13,9 @@ def generate_agents(N, number_of_parameters, bounds):
 		for j in range(number_of_parameters):
 			agent.append(uniform(bounds[j][0], bounds[j][1]))
 
-		print(agent)
+		
 		agents.append(agent)
 	return agents
-
 
 # Finds three unique random indexes in an array.
 def three_agents(x_index, population):
@@ -32,131 +34,111 @@ def three_agents(x_index, population):
 
 	return index1, index2, index3
 
-def write_to_file(file_name, iters, minimum, agent):
+def write_to_file(file_name, iters, minimum, agent, time):
 	file_open = open(file_name + ".txt", "a")
-	file_open.write(str(iters) + ", " + str(minimum) + ", " + str(agent) + "\n")
+	file_open.write(str(iters) + ", " + str(minimum) + ", " + str(time) + ", " + str(agent) + "\n")
 	file_open.close()	
 
+def agent_procedure(func, agents, number_of_parameters, hard_bounds, F, CR, j):
+	x = agents[j]
+	a_index, b_index, c_index = three_agents(j, agents)
+	
+	a = agents[a_index]
+	b = agents[b_index]
+	c = agents[c_index]
 
-def thread_minimum(func, agents, limits, return_dict):
+	R = randrange(0, number_of_parameters)
+
+	# Adaptive Parameters
+	r1 = uniform(0, 1)
+	r2 = uniform(0, 1)
+	r3 = uniform(0, 1)
+	r4 = uniform(0, 1)
+	mu_l = 0.1
+	mu_u = 0.1
+	kappa1 = 0.1
+	kappa2 = 0.9
+	if (r2 < kappa1):
+		F = mu_l + r1 * mu_u
+	if(r4 < kappa2):
+		CR = r3
+
+	# Mutation and Recombination
+	y = []
+	for k in range(number_of_parameters):
+		r_k = uniform(0, 1)
+		if(r_k < CR or k == R):
+			y.append(a[k] + F * (b[k] - c[k]))
+		else:
+			y.append(x[k])
+
+	# Bound parameters within a region.
+	for y_i in range(len(y)):
+		if(y[y_i] > hard_bounds[y_i][1]):
+			y[y_i] = uniform(hard_bounds[y_i][0], hard_bounds[y_i][1])
+		elif(y[y_i] < hard_bounds[y_i][0]):
+			y[y_i] = uniform(hard_bounds[y_i][0], hard_bounds[y_i][1])
+
+	eval_y, _ = func(y)
+	eval_x, _ = func(x)
+	if(eval_y < eval_x):
+		return y
+	else:
+		return x
+
+def adaptive_differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, file_name, threshold_value=10e100, thread=False):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	size = comm.Get_size()
 	minimum = 10E10
-	optimised_index = -1
-
-	for n in range(limits[0], limits[1] + 1):
-		f = func(agents[n])
-		if(f < minimum):
-			minimum = f
-			optimised_index = n
-			return_dict[n] = minimum
-
-
-def find_maximum_index(return_dict):  
-     v=list(return_dict.values())
-     k=list(return_dict.keys())
-     return k[v.index(max(v))]
-
-def func_manager(func, index, x, return_dict):
-	return_dict[index] = func(x)
-
-def differential_evolution(func, iterations, number_of_agents, number_of_parameters, CR, F, bounds, hard_bounds, file_name, threshold_value=10e100, thread=False):
-	# Initialisation
-	agents = generate_agents(number_of_agents, number_of_parameters, bounds)
-
 	optimised_agent = []
-	minimum = 10E10
 	iters = 0
 
+	if(rank == 0):
+		agents = generate_agents(number_of_agents, number_of_parameters, bounds)
+		agents_array = [agents for i in range(size)]
+	else:
+		agents_array = []
+
+	agents = comm.scatter(agents_array, root=0)
+	
+
 	while(True):
-		for j in range(len(agents)):
-			x = agents[j]
-			a_index, b_index, c_index = three_agents(j, agents)
-			
-			a = agents[a_index]
-			b = agents[b_index]
-			c = agents[c_index]
+		start = time()
+		data = agent_procedure(func, agents, number_of_parameters, hard_bounds, F, CR, rank)
+		comm.Barrier()
+		end = time()
 
-			R = randrange(0, number_of_parameters)
+		data = comm.gather(data, root=0)
 
-			# Mutation and Recombination
-			y = []
-			for k in range(number_of_parameters):
-				r_k = uniform(0, 1)
-				if(r_k < CR or k == R):
-					y.append(a[k] + F * (b[k] - c[k]))
-				else:
-					y.append(x[k])
+		if(rank == 0):
+			agents = data
+			iters += 1
+			print(iters)
+			agents_array = [agents for i in range(size)]
 
-				# Bound parameters within a region.
-				for y_i in range(len(y)):
-					if(y[y_i] > hard_bounds[y_i][1]):
-						y[y_i] = hard_bounds[y_i][1]
+		else:
+			agents_array = []
 
-					elif(y[y_i] < hard_bounds[y_i][0]):
-						y[y_i] = hard_bounds[y_i][0]
-
-					else:
-						continue
-
-			manager = Manager()
-			return_dict = manager.dict()
-
-			jobs = []
-			agent_compare = [x, y]
-			for i in range(len(agent_compare)):
-				p = Process(target=func_manager, args=(func, i, agent_compare[i], return_dict,))
-				jobs.append(p)
-				p.start()
-
-			for job in jobs:
-				job.join()
-
-			# Selection
-			if(return_dict[1] < return_dict[0]):
-				agents[j] = y
-			else:
-				continue
-
-		# Update and print the minimum every 10 iterations to keep track.
-		if(iters % 10 == 0):
-			if(thread):
-				manager = Manager()
-				return_dict = manager.dict()
-
-				jobs = []
-				steps = 1
-				for i in range(0, number_of_agents, steps):
-					p = Process(target=thread_minimum, args=(func, agents, [i, i + (steps - 1)], return_dict))
-					jobs.append(p)
-					p.start()
-
-				for p in jobs:
-					p.join()
-
-				best_index = find_maximum_index(return_dict)
-				minimum = return_dict[best_index]
-				optimised_agent = agents[best_index]
-			else: 
-				for agent in agents:
-					f = func(agent)
-					if(f < minimum):
-						minimum = f
-						optimised_agent = agent
-					else: 
-						continue
-
-			print("Minimum after " + str((iters + 1)) + " iterations (" + file_name + "): "  + str(minimum))  
-			write_to_file(file_name, iters, minimum, optimised_agent)   
-
-		iters += 1
-
-		# If minimum is less than threshold_value, print details and continue running the code.
-		if(minimum < threshold_value):
-			print(minimum, optimised_agent, iters)
-
-		# If iteration criteria is met, return values and end code.
-		print(iters)
-		if(iters >= iterations):
-			return minimum, optimised_agent, iters
-
+		comm.Barrier()
 		
-	return minimum, optimised_agent, iters
+		# Update and print the minimum every 10 iterations to keep track.
+
+		iters = comm.bcast(iters, root=0)
+		if(iters % 50 == 0):
+			if(rank == 0):
+				data = np.array_split(data, size)
+			else:
+				data = []
+			agents_to_compare = comm.scatter(data, root=0)
+			f, params = func(agents_to_compare[0])
+			evaluated_agents = comm.gather((f, params), root=0)
+			
+			if(rank == 0):
+				minimum, optimised_agent = min(evaluated_agents, key = lambda t: t[0])
+				print(minimum, optimised_agent)
+				write_to_file(file_name, iters, minimum, optimised_agent, end - start)  
+
+		agents = comm.scatter(agents_array, root=0)
+		comm.Barrier()
+

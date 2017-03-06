@@ -1,4 +1,4 @@
-from differential_evolution import differential_evolution
+from differential_evolution import adaptive_differential_evolution
 from math import log, sin, cos, sqrt
 from Fidelity import Fidelity
 from qutip import *
@@ -22,7 +22,7 @@ class Optimisation:
 		self.filename = filename
 
 		''' Default random parameters to avoid errors. '''
-		self.params = [float(randrange(-1000, 1000))/1000 for param in range(network.number_of_params())]
+		self.params = [float(randrange(-2000, 2000))/100 for param in range(network.number_of_params())]
 
 		''' Fidelity object between the network and ideal gate '''
 		self.fidelity_obj = Fidelity(network, ideal_gate)
@@ -32,10 +32,11 @@ class Optimisation:
 		self.params = params
 
 	'''Optimise the network via differential evolution'''
-	def optimise_de(self, func, iterations=10000, number_of_agents=8, CR=0.5, F=0.5):
-		bounds = [[-5, 5] for params in range(self.network.number_of_params())]
+	def optimise_de(self, func, bounds, number_of_processors, iterations=10000000, CR=0.5, F=0.9):
+		#bounds = [[param-0.1, param+0.1] for param in self.params]
 		hard_bounds = [bound for bound in bounds]
-		return differential_evolution(func, iterations, number_of_agents, self.network.number_of_params(), CR, F, bounds, hard_bounds, self.filename, threshold_value=-0.99)
+		return adaptive_differential_evolution(func, iterations, number_of_processors, self.network.number_of_params(), CR, F, bounds, hard_bounds, self.filename, threshold_value=-0.99)
+#		return differential_evolution(func, iterations, number_of_agents, self.network.number_of_params(), CR, F, bounds, hard_bounds, self.filename, threshold_value=-0.99)
 
 	def write_to_file(self, file_name, iters, value, params):
 		file_open = open(file_name + ".txt", "a")
