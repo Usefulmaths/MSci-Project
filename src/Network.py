@@ -64,7 +64,7 @@ class Network:
 				j_iter += 1 
 
 			H += 1./4 * H_contribution
-
+		
 		h_iter = 0
 		for qubit_number in range(self.get_number_qubits()):
 			H_contribution = 0
@@ -80,3 +80,4 @@ class Network:
 
 	
 		return H
+
