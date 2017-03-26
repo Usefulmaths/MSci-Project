@@ -55,9 +55,9 @@ def agent_procedure(func, agents, number_of_parameters, hard_bounds, F, CR, j):
 	r3 = uniform(0, 1)
 	r4 = uniform(0, 1)
 	mu_l = 0.1
-	mu_u = 0.1
+	mu_u = 0.9
 	kappa1 = 0.1
-	kappa2 = 0.9
+	kappa2 = 0.1
 	if (r2 < kappa1):
 		F = mu_l + r1 * mu_u
 	if(r4 < kappa2):
