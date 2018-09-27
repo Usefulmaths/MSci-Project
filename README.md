@@ -1,4 +1,5 @@
-# Quantum gate learning in engineered qubit networks: quantum half-adder
+# MSci Project
+## Quantum gate learning in engineered qubit networks: quantum half-adder
 
 The source code required to optimise a qubit network, using self-adaptive differential evolution, to perform a given quantum gate within its unmodulated dynamics.
 
