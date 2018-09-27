@@ -9,5 +9,5 @@ Additionally, this method was able to encode a Toffoli gate within the unmodulat
 
 The code can be used to construct an arbitary number of qubits in a network to implement a quantum gate of your choice. Note that this is an incredibly expensive task and will require parallelisation over a large cluster. By specifying the number of cores you would like to use, this code automatically implements a Message Passing Interface parallelisation of differential evolution over those cores.
 
-Please see the following published article for further discussion about the methods used and the result obtained:
+Please see the following published article for further discussion about the methods used and the results obtained:
 https://journals.aps.org/pra/abstract/10.1103/PhysRevA.97.062321
